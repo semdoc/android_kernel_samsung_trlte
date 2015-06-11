@@ -161,7 +161,6 @@ static int __init mcapi_init(void)
 						    &netlink_cfg);
 	if (!mod_ctx->sk) {
 		MCDRV_ERROR(mc_kapi, "register of receive handler failed");
-		kfree(mod_ctx);
 		return -EFAULT;
 	}
 

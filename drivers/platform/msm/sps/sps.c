@@ -2689,10 +2689,6 @@ static int __init sps_init(void)
 	}
 
 	ret = platform_driver_register(&msm_sps_driver);
-	if (ret) {
-		SPS_ERR("sps:unable to register driver.");
-		kfree(sps);
-	}
 
 	return ret;
 }

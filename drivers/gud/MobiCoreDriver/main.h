@@ -112,7 +112,7 @@ struct mc_mcp_buffer {
 	uint32_t	rfu; /* MCP message buffer - ignore */
 };
 
-uint32_t get_new_buffer_handle(void);
+unsigned int get_unique_id(void);
 
 /* check if caller is MobiCore Daemon */
 static inline bool is_daemon(struct mc_instance *instance)

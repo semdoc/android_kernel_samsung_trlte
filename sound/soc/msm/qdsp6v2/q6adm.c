@@ -509,13 +509,10 @@ int adm_get_params(int port_id, uint32_t module_id, uint32_t param_id,
 	}
 	if ((params_data) && (ARRAY_SIZE(adm_get_parameters) >=
 		(1+adm_get_parameters[0])) &&
-		(params_length/sizeof(uint32_t) >=
+		(params_length/sizeof(int) >=
 		adm_get_parameters[0])) {
-		if (module_id != 0x10001050)
-			for (i = 0; i < adm_get_parameters[0]; i++)
-				params_data[i] = adm_get_parameters[1+i];
-		else
-				params_data[0] = adm_get_parameters[1];
+		for (i = 0; i < adm_get_parameters[0]; i++)
+			params_data[i] = adm_get_parameters[1+i];
 	} else {
 		pr_err("%s: Get param data not copied! get_param array size %zd, index %d, params array size %zd, index %d\n",
 		__func__, ARRAY_SIZE(adm_get_parameters),
@@ -814,21 +811,15 @@ static int32_t adm_callback(struct apr_client_data *data, void *priv)
 			/* is big enough and has a valid param size */
 			if ((payload[0] == 0) && (data->payload_size >
 				(4 * sizeof(*payload))) &&
-				(data->payload_size - 4 >=
+				(data->payload_size/sizeof(*payload)-4 >=
 				payload[3]) &&
 				(ARRAY_SIZE(adm_get_parameters)-1 >=
 				payload[3])) {
-				adm_get_parameters[0] = payload[3] /
-					sizeof(uint32_t);
-				/*
-				 * payload[3] is param_size which is
-				 * expressed in number of bytes
-				 */
+				adm_get_parameters[0] = payload[3];
 				pr_debug("%s: GET_PP PARAM:received parameter length: 0x%x\n",
 					__func__, adm_get_parameters[0]);
 				/* storing param size then params */
-				for (i = 0; i < payload[3] /
-						sizeof(uint32_t); i++)
+				for (i = 0; i < payload[3]; i++)
 					adm_get_parameters[1+i] = payload[4+i];
 			} else {
 				adm_get_parameters[0] = -1;
@@ -1427,14 +1418,12 @@ int adm_open(int port_id, int path, int rate, int channel_mode, int topology,
 			else
 				open.flags = ADM_LEGACY_DEVICE_SESSION;
 
-		open.topology_id = topology;
-		if ((open.topology_id == VPM_TX_SM_ECNS_COPP_TOPOLOGY) ||
-			(open.topology_id == VPM_TX_DM_FLUENCE_COPP_TOPOLOGY) ||
-		   	 (open.topology_id == VPM_TX_SM_LVVE_COPP_TOPOLOGY) ||
-			/* LVVE for Barge-in */
-			(open.topology_id == 0x1000BFF0) ||
-			(open.topology_id == 0x1000BFF1))
-				rate = 16000;
+			open.topology_id = topology;
+			if ((open.topology_id ==
+				VPM_TX_SM_ECNS_COPP_TOPOLOGY) ||
+				(open.topology_id ==
+				VPM_TX_DM_FLUENCE_COPP_TOPOLOGY))
+					rate = 16000;
 
 			if (perf_mode == ULTRA_LOW_LATENCY_PCM_MODE) {
 				open.topology_id = NULL_COPP_TOPOLOGY;
@@ -1529,6 +1518,7 @@ int adm_open(int port_id, int path, int rate, int channel_mode, int topology,
 			open.endpoint_id_2 = this_adm.ec_ref_rx;
 			this_adm.ec_ref_rx = -1;
 		}
+
 
 		pr_debug("%s: port_id=0x%x rate=%d topology_id=0x%X\n",
 			__func__, open.endpoint_id_1, open.sample_rate,
