@@ -122,7 +122,7 @@ static void create_dci_event_mask_tbl(unsigned char *tbl_buf)
 		memset(tbl_buf, 0, DCI_EVENT_MASK_SIZE);
 }
 
-static void dci_drain_data(unsigned long data)
+void dci_drain_data(unsigned long data)
 {
 	queue_work(driver->diag_dci_wq, &dci_data_drain_work);
 }
@@ -131,7 +131,7 @@ static void dci_check_drain_timer(void)
 {
 	if (!dci_timer_in_progress) {
 		dci_timer_in_progress = 1;
-		 mod_timer(&dci_drain_timer, jiffies + msecs_to_jiffies(500));
+		mod_timer(&dci_drain_timer, jiffies + msecs_to_jiffies(500));
 	}
 }
 
@@ -288,6 +288,7 @@ void dci_data_drain_work_fn(struct work_struct *work)
 		for (i = 0; i < entry->num_buffers; i++) {
 			proc_buf = &entry->buffers[i];
 
+			mutex_lock(&proc_buf->buf_mutex);
 			buf_temp = proc_buf->buf_primary;
 			if (DCI_CAN_ADD_BUF_TO_LIST(buf_temp))
 				dci_add_buffer_to_list(entry, buf_temp);
@@ -299,10 +300,9 @@ void dci_data_drain_work_fn(struct work_struct *work)
 			buf_temp = proc_buf->buf_curr;
 			if (DCI_CAN_ADD_BUF_TO_LIST(buf_temp)) {
 				dci_add_buffer_to_list(entry, buf_temp);
-				mutex_lock(&proc_buf->buf_mutex);
 				proc_buf->buf_curr = NULL;
-				mutex_unlock(&proc_buf->buf_mutex);
 			}
+			mutex_unlock(&proc_buf->buf_mutex);
 		}
 		if (!list_empty(&entry->list_write_buf) && !entry->in_service) {
 			mutex_lock(&entry->write_buf_mutex);
@@ -647,8 +647,6 @@ static struct dci_pkt_req_entry_t *diag_register_dci_transaction(int uid,
 	entry->client_id = client_id;
 	entry->uid = uid;
 	entry->tag = driver->dci_tag;
-	DIAG_LOG(DIAG_DEBUG_HIGH, "diag: Registering DCI cmd req, client_id: %d, uid: %d, tag:%d\n",
-				entry->client_id, entry->uid, entry->tag);
 	list_add_tail(&entry->track, &driver->dci_req_list);
 	driver->num_dci_cmd++;
 	mutex_unlock(&driver->dci_mutex);
@@ -853,6 +851,7 @@ void extract_dci_pkt_rsp(unsigned char *buf, int len, int data_source,
 	if (delete_flag < 0)
 		return;
 
+	mutex_lock(&entry->buffers[data_source].buf_mutex);
 	rsp_buf = entry->buffers[data_source].buf_cmd;
 
 	mutex_lock(&rsp_buf->data_mutex);
@@ -869,6 +868,7 @@ void extract_dci_pkt_rsp(unsigned char *buf, int len, int data_source,
 		if (!temp_buf) {
 			pr_err("diag: DCI realloc failed\n");
 			mutex_unlock(&rsp_buf->data_mutex);
+			mutex_unlock(&entry->buffers[data_source].buf_mutex);
 			return;
 		} else {
 			rsp_buf->data = temp_buf;
@@ -905,6 +905,7 @@ void extract_dci_pkt_rsp(unsigned char *buf, int len, int data_source,
 	 * for log and event buffers to be full
 	 */
 	dci_add_buffer_to_list(entry, rsp_buf);
+	mutex_unlock(&entry->buffers[data_source].buf_mutex);
 }
 
 static void copy_dci_event(unsigned char *buf, int len,

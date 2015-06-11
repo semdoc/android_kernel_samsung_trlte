@@ -2085,35 +2085,32 @@ static struct msm_gpiomux_config apq8084_fingerprint_configs_rev10[] __initdata 
 	},
 };
 
-static struct msm_gpiomux_config apq8084_fingerprint_configs_rev03[] __initdata = {
-	{
-		/* BTP_OCP_EN */
-		.gpio = 136,
-		.settings = {
-			[GPIOMUX_SUSPENDED] = &gpio_spi_btp_rst_config,
-			[GPIOMUX_ACTIVE] = &gpio_spi_btp_rst_config,
-		},
-	},
-	{
-		/* BTP_LDO2 */
-		.gpio = 304,
-		.settings = {
-			[GPIOMUX_SUSPENDED] = &gpio_spi_btp_rst_config,
-			[GPIOMUX_ACTIVE] = &gpio_spi_btp_rst_config,
-		},
-	},
-};
+	if (of_board_is_sbc()) {
+		msm_gpiomux_install(msm_hdmi_nomux_configs,
+			ARRAY_SIZE(msm_hdmi_nomux_configs));
+		msm_gpiomux_install(apq8084_general_led_configs,
+			ARRAY_SIZE(apq8084_general_led_configs));
+	} else {
+		msm_gpiomux_install(apq8084_hsic_configs,
+			ARRAY_SIZE(apq8084_hsic_configs));
+		msm_gpiomux_install_nowrite(msm_hdmi_configs,
+			ARRAY_SIZE(msm_hdmi_configs));
+		msm_gpiomux_install(hap_lvl_shft_config,
+			ARRAY_SIZE(hap_lvl_shft_config));
+	}
 
-static struct msm_gpiomux_config apq8084_fingerprint_configs_ldo1[] __initdata = {
-	{
-		/* BTP_LDO */
-		.gpio = 137,
-		.settings = {
-			[GPIOMUX_SUSPENDED] = &gpio_spi_btp_rst_config,
-			[GPIOMUX_ACTIVE] = &gpio_spi_btp_rst_config,
-		},
-	},
-};
+	msm_gpiomux_install(msm_wlan_configs, ARRAY_SIZE(msm_wlan_configs));
+	msm_gpiomux_install(sd_card_det, ARRAY_SIZE(sd_card_det));
+	if (of_board_is_cdp() || of_board_is_sbc())
+		msm_gpiomux_install(eth_pwr, ARRAY_SIZE(eth_pwr));
+	if (of_board_is_sbc())
+		msm_gpiomux_install(msm_sbc_sensor_configs,
+				ARRAY_SIZE(msm_sbc_sensor_configs));
+	else
+		msm_gpiomux_install_nowrite(msm_sensor_configs,
+				ARRAY_SIZE(msm_sensor_configs));
+	msm_gpiomux_install(msm_pcie_configs, ARRAY_SIZE(msm_pcie_configs));
+	msm_gpiomux_install(msm_epm_configs, ARRAY_SIZE(msm_epm_configs));
 
 static struct msm_gpiomux_config apq8084_fingerprint_configs[] __initdata = {
 	{

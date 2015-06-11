@@ -295,19 +295,11 @@ static inline bool mdss_fb_is_power_on_lp(struct msm_fb_data_type *mfd)
 	return mdss_panel_is_power_on_lp(mfd->panel_power_state);
 }
 
-#ifdef CONFIG_SAMSUNG_LPM_MODE
-extern int poweroff_charging;
-#endif /* CONFIG_SAMSUNG_LPM_MODE */
-
-#if defined(CONFIG_FB_MSM_MIPI_SAMSUNG_OCTA_CMD_FHD_FA2_PT_PANEL)
-enum TE_SETTING {
-	TE_SET_INIT = -1,
-	TE_SET_READY,
-	TE_SET_START,
-	TE_SET_DONE,
-	TE_SET_FAIL,
-};
-#endif
+static inline bool mdss_fb_is_hdmi_primary(struct msm_fb_data_type *mfd)
+{
+	return (mfd && (mfd->index == 0) &&
+		(mfd->panel_info->type == DTV_PANEL));
+}
 
 int mdss_fb_get_phys_info(dma_addr_t *start, unsigned long *len, int fb_num);
 void mdss_fb_set_backlight(struct msm_fb_data_type *mfd, u32 bkl_lvl);

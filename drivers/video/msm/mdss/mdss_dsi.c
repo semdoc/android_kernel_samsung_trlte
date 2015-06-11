@@ -1591,12 +1591,9 @@ int dsi_panel_device_register(struct device_node *pan_node,
 	} else {
 		pinfo->panel_power_state = MDSS_PANEL_POWER_OFF;
 	}
-#if defined(CONFIG_FB_MSM_MDSS_SAMSUNG)
-	rc = mdss_dsi_request_gpios(ctrl_pdata);
-	if (rc) {
-		pr_err("gpio request failed\n");
-	}
-#endif
+
+	pinfo->is_prim_panel = true;
+
 	rc = mdss_register_panel(ctrl_pdev, &(ctrl_pdata->panel_data));
 	if (rc) {
 		pr_err("%s: unable to register MIPI DSI panel\n", __func__);

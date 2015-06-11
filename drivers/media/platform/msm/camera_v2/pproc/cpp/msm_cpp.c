@@ -2048,6 +2048,35 @@ long msm_cpp_subdev_ioctl(struct v4l2_subdev *sd,
 	default:
 		pr_err_ratelimited("invalid value: cmd=0x%x\n", cmd);
 		break;
+	case VIDIOC_MSM_CPP_IOMMU_ATTACH: {
+		if (cpp_dev->iommu_state == CPP_IOMMU_STATE_DETACHED) {
+			rc = iommu_attach_device(cpp_dev->domain,
+				cpp_dev->iommu_ctx);
+			if (rc < 0) {
+				pr_err("%s:%dError iommu_attach_device failed\n",
+					__func__, __LINE__);
+				rc = -EINVAL;
+			}
+			cpp_dev->iommu_state = CPP_IOMMU_STATE_ATTACHED;
+		} else {
+			pr_err("%s:%d IOMMMU attach triggered in invalid state\n",
+				__func__, __LINE__);
+			rc = -EINVAL;
+		}
+		break;
+	}
+	case VIDIOC_MSM_CPP_IOMMU_DETACH: {
+		if ((cpp_dev->iommu_state == CPP_IOMMU_STATE_ATTACHED) &&
+			(cpp_dev->stream_cnt == 0)) {
+			iommu_detach_device(cpp_dev->domain,
+				cpp_dev->iommu_ctx);
+			cpp_dev->iommu_state = CPP_IOMMU_STATE_DETACHED;
+		} else {
+			pr_err("%s:%d IOMMMU attach triggered in invalid state\n",
+				__func__, __LINE__);
+		}
+		break;
+	}
 	}
 	mutex_unlock(&cpp_dev->mutex);
 mutex_unlock_free_ret:

@@ -1758,7 +1758,6 @@ static int adreno_init(struct kgsl_device *device)
 	/* Power up the device */
 	kgsl_pwrctrl_enable(device);
 
-
 	/* Identify the specific GPU */
 	adreno_identify_gpu(adreno_dev);
 
@@ -1963,9 +1962,6 @@ static int adreno_start(struct kgsl_device *device, int priority)
 	int nice = task_nice(current);
 	int ret;
 
-	/* default 501 will allow PC to happen, set it to 490 to prevent PC happening during adreno_start; */
-	pm_qos_update_request(&device->pwrctrl.pm_qos_req_dma, 490);
-
 	if (priority && (_wake_nice < nice))
 		set_user_nice(current, _wake_nice);
 
@@ -1975,34 +1971,6 @@ static int adreno_start(struct kgsl_device *device, int priority)
 		set_user_nice(current, nice);
 
 	return ret;
-}
-
-/**
- * adreno_vbif_clear_pending_transactions() - Clear transactions in VBIF pipe
- * @device: Pointer to the device whose VBIF pipe is to be cleared
- */
-static void adreno_vbif_clear_pending_transactions(struct kgsl_device *device)
-{
-	struct adreno_device *adreno_dev = ADRENO_DEVICE(device);
-	unsigned int mask = adreno_dev->gpudev->vbif_xin_halt_ctrl0_mask;
-	unsigned int val;
-	unsigned long wait_for_vbif;
-
-	adreno_writereg(adreno_dev, ADRENO_REG_VBIF_XIN_HALT_CTRL0, mask);
-	/* wait for the transactions to clear */
-	wait_for_vbif = jiffies + msecs_to_jiffies(100);
-	while (1) {
-		adreno_readreg(adreno_dev,
-			ADRENO_REG_VBIF_XIN_HALT_CTRL1, &val);
-		if ((val & mask) == mask)
-			break;
-		if (time_after(jiffies, wait_for_vbif)) {
-			KGSL_DRV_ERR(device,
-				"Wait limit reached for VBIF XIN Halt\n");
-			break;
-		}
-	}
-	adreno_writereg(adreno_dev, ADRENO_REG_VBIF_XIN_HALT_CTRL0, 0);
 }
 
 static int adreno_stop(struct kgsl_device *device)
@@ -2674,9 +2642,11 @@ static int adreno_setproperty(struct kgsl_device_private *dev_priv,
 				device->pwrctrl.ctrl_flags = 0;
 				adreno_dev->fast_hang_detect = 1;
 
-				if (adreno_dev->gpudev->fault_detect_start)
-					adreno_dev->gpudev->fault_detect_start(
-						adreno_dev);
+				if (adreno_dev->gpudev->fault_detect_start &&
+				!kgsl_active_count_get(&adreno_dev->dev)) {
+					adreno_dev->gpudev->fault_detect_start(adreno_dev);
+					kgsl_active_count_put(&adreno_dev->dev);
+				}
 
 				kgsl_pwrscale_enable(device);
 			} else {
