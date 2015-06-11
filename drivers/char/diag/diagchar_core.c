@@ -1425,7 +1425,6 @@ static ssize_t diagchar_read(struct file *file, char __user *buf, size_t count,
 	int num_data = 0, data_type;
 	int remote_token;
 	int exit_stat;
-	int copy_dci_data = 0;
 	int copy_data = 0;
 	int copy_dci_data = 0;
 	unsigned long flags;
