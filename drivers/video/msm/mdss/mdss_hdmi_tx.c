@@ -1153,6 +1153,9 @@ void hdmi_tx_hdcp_cb(void *ptr, enum hdmi_hdcp_state status)
 		}
 		break;
 	case HDCP_STATE_AUTH_FAIL:
+#if !defined(CONFIG_SEC_MHL_AP_HDCP)
+		break;
+#else
 		if (hdmi_ctrl->hpd_state) {
 			enc_en = hdmi_tx_is_encryption_set(hdmi_ctrl);
 			hdmi_tx_set_audio_switch_node(hdmi_ctrl, !enc_en);
@@ -1974,6 +1977,10 @@ static int hdmi_tx_enable_power(struct hdmi_tx_ctrl *hdmi_ctrl,
 		goto error;
 	}
 
+#if defined(CONFIG_SEC_MHL_SUPPORT)
+	if (hdmi_ctrl->is_power_enabled[module] == enable)
+		return rc;
+#endif
 	power_data = &hdmi_ctrl->pdata.power_data[module];
 	if (!power_data) {
 		DEV_ERR("%s: Error: invalid power data\n", __func__);
@@ -2743,6 +2750,7 @@ static void hdmi_tx_power_off_work(struct work_struct *work)
 		hdmi_tx_audio_off(hdmi_ctrl);
 	}
 
+#ifdef MHL_CEC_SUPPORT
 	hdmi_cec_deconfig(hdmi_ctrl->feature_data[HDMI_TX_FEAT_CEC]);
 #endif
 	hdmi_tx_core_off(hdmi_ctrl);
