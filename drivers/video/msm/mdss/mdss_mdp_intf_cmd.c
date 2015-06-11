@@ -34,6 +34,7 @@
 
 static DEFINE_MUTEX(cmd_clk_mtx);
 
+#if !defined(CONFIG_FB_MSM_MDSS_SAMSUNG)
 struct mdss_mdp_cmd_ctx {
 	struct mdss_mdp_ctl *ctl;
 	u32 pp_num;
@@ -60,6 +61,7 @@ struct mdss_mdp_cmd_ctx {
 	struct mdss_mdp_cmd_ctx *sync_ctx;	/* for left + right, partial update */
 	u32 pp_timeout_report_cnt;
 };
+#endif
 
 struct mdss_mdp_cmd_ctx mdss_mdp_cmd_ctx_list[MAX_SESSIONS];
 
